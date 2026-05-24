@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Wooden Sliding Puzzle</title>
+    <style>
+        :root {
+            --blue: #1E88E5;
+            --yellow: #FDD835;
+            --pink: #D81B60;
+            --darkgreen: #43A047;
+            --orange: #FB8C00;
+            --lightgreen: #7CB342;
+            --board-bg: #E4D5B7;
+            --wood-frame: #C8B28B;
+            --tile-size: 90px;
+            --gap: 6px;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f4f9;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            color: #333;
+            touch-action: manipulation; /* Prevents double-tap zooming */
+        }
+
+        h1 { margin-bottom: 5px; font-size: 1.8rem; }
+        p { margin-top: 0; margin-bottom: 25px; color: #666; font-size: 0.95rem;}
+
+        .game-wrapper {
+            display: flex;
+            gap: 40px;
+            align-items: center;
+            background: #fff;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        /* Target Cube Panel */
+        .target-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid #eaeaea;
+        }
+        .target-panel h3 { margin: 0 0 10px 0; font-size: 1rem; color: #555; }
+        .target-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 30px);
+            grid-template-rows: repeat(3, 30px);
+            gap: 2px;
+            background: #333;
+            padding: 2px;
+            border-radius: 4px;
+        }
+        .target-tile {
+            width: 30px;
+            height: 30px;
+        }
+
+        /* Main Game Board */
+        .board-container {
+            position: relative;
+            background: var(--board-bg);
+            padding: var(--gap);
+            border-radius: 8px;
+            border: 12px solid var(--wood-frame);
+            width: calc(var(--tile-size) * 3 + var(--gap) * 2);
+            height: calc(var(--tile-size) * 3 + var(--gap) * 2);
+            box-shadow: inset 0 4px 10px rgba(0,0,0,0.15), 0 8px 20px rgba(0,0,0,0.2);
+        }
+
+        .tile {
+            position: absolute;
+            width: var(--tile-size);
+            height: var(--tile-size);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: transform 0.2s ease-in-out;
+            box-shadow: inset 0 2px 4px rgba(255,255,255,0.4), 0 4px 6px rgba(0,0,0,0.2);
+        }
+
+        /* Wooden Knob on Tiles */
+        .tile::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 24px;
+            height: 24px;
+            background: radial-gradient(circle at 30% 30%, #f5deb3, #d2b48c 60%, #8b4513);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+        }
+
+        .controls {
+            margin-top: 25px;
+            display: flex;
+            gap: 15px;
+        }
+        
+        button {
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            background: #333;
+            color: #fff;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+        }
+        button:hover { background: #555; }
+        button:active { transform: scale(0.96); }
+
+        #message {
+            margin-top: 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--darkgreen);
+            min-height: 24px;
+        }
+
+        /* Colors mapping based on the image */
+        .color-blue { background-color: var(--blue); }
+        .color-yellow { background-color: var(--yellow); }
+        .color-pink { background-color: var(--pink); }
+        .color-darkgreen { background-color: var(--darkgreen); }
+        .color-orange { background-color: var(--orange); }
+        .color-lightgreen { background-color: var(--lightgreen); }
+        .color-empty { background-color: transparent; box-shadow: none; }
+        .color-empty::after { display: none; } /* No knob on empty */
+
+        @media (max-width: 600px) {
+            .game-wrapper {
+                flex-direction: column;
+                gap: 20px;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Logic Slider</h1>
+    <p>Tap a block to slide. Match the target pattern.</p>
+
+    <div class="game-wrapper">
+        <div class="target-panel">
+            <h3>Target</h3>
+            <div id="target-grid" class="target-grid"></div>
+        </div>
+
+        <div id="board" class="board-container"></div>
+    </div>
+
+    <div class="controls">
+        <button onclick="shuffleBoard()">Shuffle</button>
+    </div>
+    
+    <div id="message"></div>
+
+    <script>
+        // The pattern exactly as seen on the small cube in the photo
+        const targetPattern = [
+            'blue', 'empty', 'yellow',
+            'pink', 'darkgreen', 'orange',
+            'blue', 'lightgreen', 'pink'
+        ];
+
+        // Current state of the board
+        let boardState = [];
+        let emptyIndex = 1; 
+        const tileSize = 90;
+        const gap = 6;
+
+        function init() {
+            renderTarget();
+            createBoard();
+            shuffleBoard();
+        }
+
+        function renderTarget() {
+            const grid = document.getElementById('target-grid');
+            targetPattern.forEach(color => {
+                const div = document.createElement('div');
+                div.className = `target-tile color-${color}`;
+                grid.appendChild(div);
+            });
+        }
+
+        function createBoard() {
+            const board = document.getElementById('board');
+            board.innerHTML = '';
+            boardState = [];
+
+            targetPattern.forEach((color, index) => {
+                boardState.push(color);
+                
+                if (color !== 'empty') {
+                    const tile = document.createElement('div');
+                    tile.className = `tile color-${color}`;
+                    tile.id = `tile-${index}`; // Physical DOM tracking
+                    
+                    // Tap / Click Event
+                    tile.addEventListener('click', () => handleMove(tile.id));
+                    board.appendChild(tile);
+                }
+            });
+            updateTilePositions();
+        }
+
+        function updateTilePositions() {
+            const board = document.getElementById('board');
+            const tilesDOM = Array.from(board.children);
+
+            boardState.forEach((color, index) => {
+                if (color !== 'empty') {
+                    // Find the physical DOM element currently acting as this piece
+                    const tile = tilesDOM.find(t => t.classList.contains(`color-${color}`) && !t.dataset.placed);
+                    if (tile) {
+                        tile.dataset.placed = "true";
+                        tile.dataset.currentIndex = index; // Store logical index in DOM
+                        setTileTransform(tile, index);
+                    }
+                }
+            });
+
+            // Cleanup temp tracker
+            tilesDOM.forEach(t => delete t.dataset.placed);
+        }
+
+        function setTileTransform(element, index) {
+            const row = Math.floor(index / 3);
+            const col = index % 3;
+            const x = col * (tileSize + gap);
+            const y = row * (tileSize + gap);
+            element.style.transform = `translate(${x}px, ${y}px)`;
+        }
+
+        function getValidMoves(emptyIdx) {
+            const moves = [];
+            const row = Math.floor(emptyIdx / 3);
+            const col = emptyIdx % 3;
+            
+            if (row > 0) moves.push(emptyIdx - 3); // Up
+            if (row < 2) moves.push(emptyIdx + 3); // Down
+            if (col > 0) moves.push(emptyIdx - 1); // Left
+            if (col < 2) moves.push(emptyIdx + 1); // Right
+            
+            return moves;
+        }
+
+        function handleMove(tileId) {
+            const tile = document.getElementById(tileId);
+            const currentIndex = parseInt(tile.dataset.currentIndex);
+            
+            if (getValidMoves(emptyIndex).includes(currentIndex)) {
+                // Swap state
+                boardState[emptyIndex] = boardState[currentIndex];
+                boardState[currentIndex] = 'empty';
+                
+                // Update empty tracker and DOM
+                emptyIndex = currentIndex;
+                updateTilePositions();
+                
+                checkWin();
+            }
+        }
+
+        function shuffleBoard() {
+            document.getElementById('message').innerText = '';
+            
+            // To guarantee solvability, we simulate random valid sliding moves
+            // instead of blindly randomizing the array.
+            for (let i = 0; i < 150; i++) {
+                const validMoves = getValidMoves(emptyIndex);
+                const randomMove = validMoves[Math.floor(Math.random() * validMoves.length)];
+                
+                boardState[emptyIndex] = boardState[randomMove];
+                boardState[randomMove] = 'empty';
+                emptyIndex = randomMove;
+            }
+            updateTilePositions();
+        }
+
+        function checkWin() {
+            let isWin = true;
+            for (let i = 0; i < boardState.length; i++) {
+                if (boardState[i] !== targetPattern[i]) {
+                    isWin = false;
+                    break;
+                }
+            }
+            if (isWin) {
+                document.getElementById('message').innerText = '🎉 Pattern Solved!';
+            }
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
