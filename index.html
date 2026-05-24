@@ -6,12 +6,14 @@
     <title>Wooden Sliding Puzzle</title>
     <style>
         :root {
-            --blue: #0047AB;
-            --yellow: #FFD700;
-            --pink: #FF1493;
-            --darkgreen: #228B22;
-            --orange: #FF6600;
-            --lightgreen: #00CC33;
+            --red: #FF0000;
+            --orange: #FF7F00;
+            --yellow: #FFFF00;
+            --green: #00B050;
+            --cyan: #00FFFF;
+            --blue: #0000FF;
+            --magenta: #FF00FF;
+            --rose: #FF1493;
             --board-bg: #E4D5B7;
             --wood-frame: #C8B28B;
             --tile-size: 90px;
@@ -129,17 +131,19 @@
             margin-top: 20px;
             font-size: 1.2rem;
             font-weight: bold;
-            color: var(--darkgreen);
+            color: var(--green);
             min-height: 24px;
         }
 
-        /* Colors mapping based on the image */
-        .color-blue { background-color: var(--blue); }
-        .color-yellow { background-color: var(--yellow); }
-        .color-pink { background-color: var(--pink); }
-        .color-darkgreen { background-color: var(--darkgreen); }
+        /* Colors mapping - 8 distinct colors from the color wheel */
+        .color-red { background-color: var(--red); }
         .color-orange { background-color: var(--orange); }
-        .color-lightgreen { background-color: var(--lightgreen); }
+        .color-yellow { background-color: var(--yellow); }
+        .color-green { background-color: var(--green); }
+        .color-cyan { background-color: var(--cyan); }
+        .color-blue { background-color: var(--blue); }
+        .color-magenta { background-color: var(--magenta); }
+        .color-rose { background-color: var(--rose); }
         .color-empty { background-color: transparent; box-shadow: none; }
         .color-empty::after { display: none; } /* No knob on empty */
 
@@ -173,11 +177,11 @@
     <div id="message"></div>
 
     <script>
-        // The pattern exactly as seen on the small cube in the photo
+        // The pattern with 8 distinct colors from the color wheel
         const targetPattern = [
-            'blue', 'empty', 'yellow',
-            'pink', 'darkgreen', 'orange',
-            'blue', 'lightgreen', 'pink'
+            'red', 'empty', 'orange',
+            'yellow', 'green', 'cyan',
+            'blue', 'magenta', 'rose'
         ];
 
         // Current state of the board
